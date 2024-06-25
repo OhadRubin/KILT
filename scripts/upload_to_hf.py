@@ -29,7 +29,9 @@ def search_question(batch: Dict, searcher: LuceneSearcher) -> Dict:
 def format_example(x: Dict) -> Dict:
     result = {"question": x["input"], "qid": x["id"]}
     if "output" in x:
-        result["output"] = x["output"]
+        result["output"] = json.dumps(x["output"])
+    else:
+        result["output"] = ""
     return result
 
 def get_paths(prefix: str) -> List[Dict]:
@@ -43,10 +45,11 @@ def get_paths(prefix: str) -> List[Dict]:
     df.reset_index(inplace=True)
     return df.to_dict("records")
 
+from itertools import islice
+def process_dataset(file_path: str, searcher: LuceneSearcher, limit_samples=None) -> datasets.Dataset:
 
-def process_dataset(file_path: str, searcher: LuceneSearcher, name:str,split:str) -> datasets.Dataset:
     def gen():
-        for x in load_data(file_path):
+        for x in islice(load_data(file_path), limit_samples):
             yield format_example(x) 
     # input_list = ()
     dataset = datasets.Dataset.from_generator(gen)
@@ -63,14 +66,14 @@ def process_dataset(file_path: str, searcher: LuceneSearcher, name:str,split:str
     
     return mapped_dataset
 
-def generate_dataset(record: Dict, searcher: LuceneSearcher, name:str) -> datasets.DatasetDict:
+def generate_dataset(record: Dict, searcher: LuceneSearcher, limit_samples=None) -> datasets.DatasetDict:
     dataset_dict = {}
     for split in record.keys():
         if split=="name":
             continue
         if record.get(split):
             print(record[split])
-            dataset_dict[split] = process_dataset(record[split], searcher, name, split)
+            dataset_dict[split] = process_dataset(record[split], searcher, limit_samples)
     
     return datasets.DatasetDict(dataset_dict)
 
@@ -81,7 +84,7 @@ def main():
     for record in records:
         dataset_name = record['name']
         print(f"Processing dataset: {dataset_name}")
-        dataset_dict = generate_dataset(record, searcher, dataset_name)
+        dataset_dict = generate_dataset(record, searcher)
         if dataset_dict:
             dataset_dict.push_to_hub(f"{dataset_name}_bm25_top100_kilt", token=os.environ["HF_TOKEN"])
         # Save to disk or push to HuggingFace Hub
