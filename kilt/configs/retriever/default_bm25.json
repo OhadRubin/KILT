@@ -1,0 +1,5 @@
+{
+    "index": "models/dpr_multi_set_hf_bert.0",
+    "k": 1000,
+    "num_threads": 100
+}

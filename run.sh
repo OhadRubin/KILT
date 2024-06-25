@@ -1,0 +1,1 @@
+python scripts/execute_retrieval.py -m bm25 -o predictions/bm25 --test_config kilt/configs/all_data.json
