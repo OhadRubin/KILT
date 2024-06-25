@@ -62,7 +62,10 @@ def process_dataset(file_path: str, searcher: LuceneSearcher, name:str,split:str
 def generate_dataset(record: Dict, searcher: LuceneSearcher, name:str) -> datasets.DatasetDict:
     dataset_dict = {}
     for split in record.keys():
+        if split=="name":
+            continue
         if record.get(split):
+            print(record[split])
             dataset = process_dataset(record[split], searcher, name, split)
             dataset_dict[split] = datasets.Dataset.from_list(dataset)
     
@@ -76,13 +79,13 @@ def main():
         dataset_name = record['name']
         print(f"Processing dataset: {dataset_name}")
         dataset_dict = generate_dataset(record, searcher, dataset_name)
-        
+        if dataset_dict:
+            dataset_dict.push_to_hub(f"{dataset_name}_bm25_top100_kilt", token=os.environ["HF_TOKEN"])
         # Save to disk or push to HuggingFace Hub
-        cache_dir = f"/dev/shm/datasets/{dataset_name}_bm25_top100"
+        # cache_dir = f"/dev/shm/datasets/{dataset_name}_bm25_top100"
         # dataset_dict.save_to_disk(cache_dir)
         
         # Uncomment the following line to push to HuggingFace Hub
-        dataset_dict.push_to_hub(f"{dataset_name}_bm25_top100_kilt", token=os.environ["HF_TOKEN"])
 
 if __name__ == "__main__":
     main()
