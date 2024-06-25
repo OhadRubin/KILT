@@ -14,7 +14,9 @@ import jnius_config
 
 import kilt.kilt_utils as utils
 from kilt.retrievers.base_retriever import Retriever
-
+import json
+def decode_doc(doc):
+    return json.loads(doc.raw())["contents"]
 
 def _run_thread(arguments):
     idz = arguments["id"]
@@ -27,9 +29,10 @@ def _run_thread(arguments):
     # bm25_b = arguments["bm25_b"]
     # searcher.set_bm25(bm25_a, bm25_b)
 
-    from pyserini.search import SimpleSearcher
+    # from pyserini.search import SimpleSearcher
+    from pyserini.search import LuceneSearcher
 
-    searcher = SimpleSearcher(index)
+    searcher = LuceneSearcher(index)
 
     _iter = data
     if idz == 0:
@@ -43,23 +46,17 @@ def _run_thread(arguments):
         )
 
         hits = searcher.search(query, k)
+        # print(hits)
 
         element = []
+
+        # doc_res = searcher.batch_doc([hit.docid for hit in hits],threads=300)
         for y in hits:
-            try:
-                doc_data = json.loads(str(y.docid).strip())
-                doc_data["score"] = y.score
-                doc_data["text"] = str(y.raw).strip()
-                element.append(doc_data)
-            except Exception as e:
-                print(e)
-                element.append(
-                    {
-                        "score": y.score,
-                        "text": str(y.raw).strip(),
-                        "title": y.docid,
-                    }
-                )
+            # doc = searcher.doc(y.docid)
+            # doc_data = json.loads(doc.raw())
+            element.append({"score": f"{y.score:.3f}", "id":y.docid})
+            # element.append({"score": y.score, "id":doc_data["id"], "text":doc_data["contents"]})
+
         provenance[query_id] = element
 
     return provenance
