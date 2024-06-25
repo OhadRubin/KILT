@@ -45,16 +45,20 @@ def get_paths(prefix: str) -> List[Dict]:
 
 
 def process_dataset(file_path: str, searcher: LuceneSearcher, name:str,split:str) -> datasets.Dataset:
-    data = load_data(file_path)
-    input_list = [format_example(x) for x in data]
-    dataset = datasets.Dataset.from_list(input_list)
+    def gen():
+        for x in load_data(file_path):
+            yield format_example(x) 
+    # input_list = ()
+    dataset = datasets.Dataset.from_generator(gen)
+    # dataset = datasets.Dataset.from_dict(input_list)
+    # itr_dataset = dataset.to_iterable_dataset()
     
     mapped_dataset = dataset.map(
         search_question,
         batch_size=300,
         batched=True,
         fn_kwargs={"searcher": searcher},
-        cache_file_name=f"/dev/shm/tmp/{name}_{split}.arrow"
+        # cache_file_name=f"/dev/shm/tmp/{name}_{split}.arrow"
     )
     
     return mapped_dataset
@@ -66,8 +70,7 @@ def generate_dataset(record: Dict, searcher: LuceneSearcher, name:str) -> datase
             continue
         if record.get(split):
             print(record[split])
-            dataset = process_dataset(record[split], searcher, name, split)
-            dataset_dict[split] = datasets.Dataset.from_list(dataset)
+            dataset_dict[split] = process_dataset(record[split], searcher, name, split)
     
     return datasets.DatasetDict(dataset_dict)
 
