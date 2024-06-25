@@ -14,8 +14,64 @@ import time
 import string
 import random
 
+import csv
+from typing import List, Tuple, Set
+import os
+import logging
+import numpy as np
+logger = logging.getLogger(__name__)
+
+def load_passages(
+  path: str, 
+  restricted_ids: Set[str] = None, 
+  use_csv_reader: bool = None, 
+  as_numpy: bool = False, 
+  iterative: bool = False,
+  topk: int = None):  # id, text, title
+    if use_csv_reader is None:
+        use_csv_reader = 'psgs_w100.tsv' in path
+    if not os.path.exists(path):
+        logger.info(f'{path} does not exist')
+        return
+    logger.info(f'Loading passages from: {path}')
+    passages = []
+    with open(path) as fin:
+        if use_csv_reader:
+          reader = csv.reader(fin, delimiter='\t')
+          header = next(reader)
+        else:
+          header = fin.readline().strip().split('\t')
+        assert len(header) == 3 and header[0] == 'id', 'header format error'
+        textfirst = header[1] == 'text'
+        for k, row in enumerate(reader if use_csv_reader else fin):
+            if (k + 1) % 1000000 == 0:
+                print(f'{(k + 1) // 1000000}M', end=' ', flush=True)
+            try:
+                if not use_csv_reader:
+                    row = row.rstrip('\n').split('\t')
+                if restricted_ids and row[0] not in restricted_ids:
+                    continue
+                if textfirst:
+                    did, text, title = row[0], row[1], row[2]
+                else:
+                    did, text, title = row[0], row[2], row[1]
+                if iterative:
+                    yield did, text, title
+                else:
+                    passages.append((did, text, title))
+            except:
+                logger.warning(f'The following input line has not been correctly loaded: {row}')
+            if topk is not None and len(passages) >= topk:
+                break
+        print()
+    if not iterative:
+        if as_numpy:
+          yield np.array(passages, dtype=np.string_)
+        yield passages
+
 ENT_START = "[START_ENT]"
 ENT_END = "[END_ENT]"
+
 
 
 def normalize_answer(s):
