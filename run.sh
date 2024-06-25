@@ -21,5 +21,8 @@ python3.10 -m pyserini.index.lucene \
   --storePositions --storeDocvectors --storeRaw
 
 ln -s /dev/shm/kilt_data/data /home/ohadr/KILT/data
+
+
 python3.10 /home/ohadr/KILT/scripts/execute_retrieval.py -m bm25 -o /dev/shm/kilt_data/bm25_predictions --test_config kilt/configs/all_data.json
+python3.10 /home/ohadr/KILT/scripts/upload_to_hf.py
 

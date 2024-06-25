@@ -79,10 +79,10 @@ def main():
         
         # Save to disk or push to HuggingFace Hub
         cache_dir = f"/dev/shm/datasets/{dataset_name}_bm25_top100"
-        dataset_dict.save_to_disk(cache_dir)
+        # dataset_dict.save_to_disk(cache_dir)
         
         # Uncomment the following line to push to HuggingFace Hub
-        # dataset_dict.push_to_hub(f"{dataset_name}_bm25_top100", token=os.environ["HF_TOKEN"])
+        dataset_dict.push_to_hub(f"{dataset_name}_bm25_top100_kilt", token=os.environ["HF_TOKEN"])
 
 if __name__ == "__main__":
     main()
